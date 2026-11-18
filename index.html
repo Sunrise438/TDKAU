@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2-Person Private Media Chat</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    /* Entrance Password Gate */
+    #login-screen {
+      background: #1e293b;
+      padding: 2rem;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+    }
+
+    #login-screen h2 {
+      margin-bottom: 0.4rem;
+      font-size: 1.5rem;
+    }
+
+    #login-screen p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 0.35rem;
+      color: #cbd5e1;
+    }
+
+    select, input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: #3b82f6;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 10px;
+      background: #3b82f6;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    #error-msg {
+      color: #f87171;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    /* Chat Interface */
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      max-width: 520px;
+      height: 100vh;
+      max-height: 860px;
+      background: #1e293b;
+      border-left: 1px solid #334155;
+      border-right: 1px solid #334155;
+    }
+
+    header {
+      background: #0f172a;
+      padding: 0.8rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .profile-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #475569;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      position:relative;
+      cursor: pointer;
+      overflow:hidden;
+    }
+    #header-avatar-image{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:none;
+    }
+    .online-dot{
+      width:12px;
+      height:12px;
+      background:#22c55e;
+      border-radius:50%;
+      border:2px solid #0f172a;
+      position:absolute;
+      bottom:0;
+      right:0;
+    }
+    .online-dot.offline {
+      background: #64748b;
+    }
+    .profile-info h3{
+      font-size:1.05rem;
+    }
+    .profile-status{
+      font-size:0.78rem;
+      color:#22c55e;
+    }
+    .profile-status.offline {
+      color: #94a3b8;
+    }
+    .header-actions {
+      margin-left:auto;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .small-btn {
+      padding: 0.45rem 0.8rem;
+      font-size: 0.8rem;
+      background: #334155;
+      width: auto;
+      border-radius: 8px;
+    }
+
+    .small-btn:hover {
+      background: #475569;
+    }
+
+    #messages-container {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .message-row {
+      display:flex;
+      gap:0.6rem;
+      align-items:flex-end;
+    }
+    .message-row.sent {
+      flex-direction:row-reverse;
+    }
+    .msg-avatar {
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      background:#475569;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      flex-shrink:0;
+      overflow:hidden;
+    }
+    .msg-avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:none;
+    }
+
+    .message {
+      max-width: 78%;
+      padding: 0.75rem 0.9rem;
+      border-radius: 14px;
+      word-wrap: break-word;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .sent > .message {
+      background: #3b82f6;
+      color: #ffffff;
+      border-bottom-right-radius: 3px;
+    }
+
+    .received > .message {
+      background: #334155;
+      color: #f8fafc;
+      border-bottom-left-radius: 3px;
+    }
+
+    .sender-tag {
+      font-size: 0.7rem;
+      opacity: 0.8;
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+
+    .message img, .message video {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 0.45rem;
+      display: block;
+    }
+
+    /* Attachment Preview Bar */
+    #preview-bar {
+      display: none;
+      background: #0f172a;
+      padding: 0.55rem 1rem;
+      font-size: 0.82rem;
+      color: #93c5fd;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #334155;
+    }
+
+    #clear-preview {
+      background: none;
+      border: none;
+      color: #f87171;
+      width: auto;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    /* Message Input Form */
+    #chat-form {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+    }
+
+    #media-label {
+      background: #334155;
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    #media-label:hover {
+      background: #475569;
+    }
+
+    #media-input {
+      display: none;
+    }
+
+    #message-input {
+      flex: 1;
+    }
+
+    #send-btn {
+      width: auto;
+      padding: 0.75rem 1.25rem;
+    }
+
+    /* Profile Edit Modal */
+    #profile-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .modal-box {
+      background: #1e293b;
+      padding: 1.5rem;
+      border-radius: 14px;
+      width: 90%;
+      max-width: 340px;
+      border: 1px solid #334155;
+    }
+    .modal-box h3 {
+      margin-bottom:1rem;
+    }
+    .modal-actions {
+      margin-top:1rem;
+      display:flex;
+      gap:0.6rem;
+    }
+    .modal-actions button {
+      flex:1;
+    }
+    #cancel-profile {
+      background: #475569;
+    }
+    #avatar-file-input{
+      display:none;
+    }
+    #upload-avatar-btn{
+      width:auto;
+      margin:0.5rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Entrance Password Gate -->
+  <div id="login-screen">
+    <h2>Private Room</h2>
+    <p>Enter your personal password to unlock.</p>
+    
+    <div class="input-group">
+      <label for="user-select">Select Your Identity</label>
+      <select id="user-select">
+        <option value="Person 1">Kulet</option>
+        <option value="Person 2">Tom</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="room-password">Enter Password</label>
+      <input type="password" id="room-password" placeholder="Enter password..." />
+    </div>
+
+    <button id="enter-btn">Unlock</button>
+    <p id="error-msg">Wrong password. Access denied.</p>
+  </div>
+
+  <!-- 2. Main Two-Person Chat Screen -->
+  <div id="chat-screen">
+    <header>
+      <div class="profile-avatar" id="avatar-trigger">
+        <img id="header-avatar-image" alt="Partner Profile Avatar">
+        <span class="online-dot" id="status-dot"></span>
+      </div>
+      <div class="profile-info">
+        <h3 id="partner-name">P2</h3>
+        <div class="profile-status" id="status-text">Online</div>
+      </div>
+      <div class="header-actions">
+        <button class="small-btn" id="edit-profile-btn">My Profile</button>
+        <button class="small-btn" id="logout-btn">Leave</button>
+      </div>
+    </header>
+
+    <div id="messages-container"></div>
+
+    <div id="preview-bar">
+      <span id="preview-name">File attached</span>
+      <button type="button" id="clear-preview">Remove</button>
+    </div>
+
+    <form id="chat-form">
+      <label for="media-input" id="media-label" title="Attach Photo or Video">📎</label>
+      <input type="file" id="media-input" accept="image/*,video/*" />
+      <input type="text" id="message-input" placeholder="Write a message..." autocomplete="off" />
+      <button type="submit" id="send-btn">Send</button>
+    </form>
+  </div>
+
+  <!-- Profile Edit Modal -->
+  <div id="profile-modal">
+    <div class="modal-box">
+      <h3>Edit Your Profile</h3>
+      <div class="input-group">
+        <label>Your Name</label>
+        <input type="text" id="edit-name">
+      </div>
+      <input type="file" id="avatar-file-input" accept="image/*">
+      <button type="button" id="upload-avatar-btn">Upload Image</button>
+      <div class="modal-actions">
+        <button id="save-profile">Save</button>
+        <button id="cancel-profile">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Separate individual entrance passwords
+    const USER_PASSWORDS = {
+      "Person 1": "pawpaw22",
+      "Person 2": "minamco22"
+    };
+    const PEER_MAP = {
+      "Person 1": "Person 2",
+      "Person 2": "Person 1"
+    };
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+    const loginScreen = document.getElementById("login-screen");
+    const chatScreen = document.getElementById("chat-screen");
+    const userSelect = document.getElementById("user-select");
+    const passwordInput = document.getElementById("room-password");
+    const enterBtn = document.getElementById("enter-btn");
+    const errorMsg = document.getElementById("error-msg");
+    const messagesContainer = document.getElementById("messages-container");
+    const chatForm = document.getElementById("chat-form");
+    const messageInput = document.getElementById("message-input");
+    const mediaInput = document.getElementById("media-input");
+    const previewBar = document.getElementById("preview-bar");
+    const previewName = document.getElementById("preview-name");
+    const clearPreviewBtn = document.getElementById("clear-preview");
+    const logoutBtn = document.getElementById("logout-btn");
+    const partnerNameEl = document.getElementById("partner-name");
+    const headerAvatarImageEl = document.getElementById("header-avatar-image");
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+    const editProfileBtn = document.getElementById("edit-profile-btn");
+    const profileModal = document.getElementById("profile-modal");
+    const editNameInput = document.getElementById("edit-name");
+    const saveProfileBtn = document.getElementById("save-profile");
+    const cancelProfileBtn = document.getElementById("cancel-profile");
+    const avatarTrigger = document.getElementById("avatar-trigger");
+    const avatarFileInput = document.getElementById("avatar-file-input");
+    const uploadAvatarBtn = document.getElementById("upload-avatar-btn");
+
+    let currentUser = "";
+    let selectedFile = null;
+    let db;
+    let statusTimer;
+    let tempAvatarSrc = null;
+
+    const request = indexedDB.open("TwoPersonMediaChatDB_v2", 3);
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      if (!db.objectStoreNames.contains("messages")) db.createObjectStore("messages", { keyPath: "id", autoIncrement: true });
+      if (!db.objectStoreNames.contains("activity")) db.createObjectStore("activity", {keyPath:"userId"});
+      if (!db.objectStoreNames.contains("profiles")) db.createObjectStore("profiles", {keyPath:"userId"});
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      loadMessages();
+    };
+
+    function getDefaultProfile(userId){
+      if(userId === "Person 1") return {userId, name:"Person 1", avatarImage:null};
+      return {userId, name:"Person 2", avatarImage:null};
+    }
+    async function getProfile(userId){
+      return new Promise(resolve=>{
+        const tx = db.transaction("profiles", "readonly");
+        const req = tx.objectStore("profiles").get(userId);
+        req.onsuccess = ()=> resolve(req.result || getDefaultProfile(userId));
+      })
+    }
+    function saveProfile(profileData){
+      const tx = db.transaction("profiles", "readwrite");
+      tx.objectStore("profiles").put(profileData);
+    }
+
+    enterBtn.addEventListener("click", async () => {
+      // Modified check: match password to selected user
+      if (passwordInput.value === USER_PASSWORDS[userSelect.value]) {
+        currentUser = userSelect.value;
+        const peerId = PEER_MAP[currentUser];
+        const peerProfile = await getProfile(peerId);
+        partnerNameEl.textContent = peerProfile.name;
+        if(peerProfile.avatarImage){
+          headerAvatarImageEl.src = peerProfile.avatarImage;
+          headerAvatarImageEl.style.display = "block";
+        }else{
+          headerAvatarImageEl.style.display = "none";
+        }
+        loginScreen.style.display = "none";
+        chatScreen.style.display = "flex";
+        errorMsg.style.display = "none";
+        passwordInput.value = "";
+        loadMessages();
+        updateMyActivity();
+        startStatusUpdater();
+      } else {
+        errorMsg.style.display = "block";
+      }
+    });
+
+    passwordInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") enterBtn.click();
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      chatScreen.style.display = "none";
+      loginScreen.style.display = "block";
+      currentUser = "";
+      clearInterval(statusTimer);
+    });
+
+    uploadAvatarBtn.onclick = ()=> avatarFileInput.click();
+    avatarFileInput.onchange = ()=>{
+      if(avatarFileInput.files[0]){
+        const reader = new FileReader();
+        reader.onload = (ev)=> tempAvatarSrc = ev.target.result;
+        reader.readAsDataURL(avatarFileInput.files[0]);
+      }
+    }
+
+    async function openProfileEditor(){
+      const myProfile = await getProfile(currentUser);
+      editNameInput.value = myProfile.name;
+      tempAvatarSrc = myProfile.avatarImage;
+      profileModal.style.display = "flex";
+    }
+    editProfileBtn.onclick = openProfileEditor;
+    avatarTrigger.onclick = openProfileEditor;
+
+    saveProfileBtn.onclick = async ()=>{
+  const updatedProfile = {
+    userId: currentUser,
+    name: editNameInput.value.trim(),
+    avatarImage: tempAvatarSrc
+  };
+  saveProfile(updatedProfile);
+  profileModal.style.display = "none";
+
+  const peerId = PEER_MAP[currentUser];
+  const peerProfile = await getProfile(peerId);
+  partnerNameEl.textContent = peerProfile.name;
+  if(peerProfile.avatarImage){
+    headerAvatarImageEl.src = peerProfile.avatarImage;
+    headerAvatarImageEl.style.display = "block";
+  }else{
+    headerAvatarImageEl.style.display = "none";
+  }
+  loadMessages();
+}
+
+cancelProfileBtn.onclick = ()=> profileModal.style.display = "none";
+
+function updateMyActivity(){
+  const tx = db.transaction("activity", "readwrite");
+  tx.objectStore("activity").put({userId: currentUser, lastSeen: Date.now()});
+}
+
+function getTimeAgo(msAgo){
+  const sec = Math.floor(msAgo /1000);
+  if(sec < 60) return `${sec} second${sec>1?"s":""} ago`;
+  const min = Math.floor(sec /60);
+  if(min <60) return `${min} minute${min>1?"s":""} ago`;
+  const hr = Math.floor(min /60);
+  if(hr <24) return `${hr} hour${hr>1?"s":""} ago`;
+  const day = Math.floor(hr /24);
+  return `${day} day${day>1?"s":""} ago`;
+}
+
+function updatePartnerStatus(){
+  const partnerId = PEER_MAP[currentUser];
+  const tx = db.transaction("activity", "readonly");
+  const getReq = tx.objectStore("activity").get(partnerId);
+  getReq.onsuccess = ()=>{
+    const record = getReq.result;
+    if(!record){
+      statusDot.classList.add("offline");
+      statusText.classList.add("offline");
+      statusText.textContent = "Offline";
+      return;
+    }
+    const diff = Date.now() - record.lastSeen;
+    if(diff < 120000){
+      statusDot.classList.remove("offline");
+      statusText.classList.remove("offline");
+      statusText.textContent = "Online";
+    }else{
+      statusDot.classList.add("offline");
+      statusText.classList.add("offline");
+      statusText.textContent = `Last seen: ${getTimeAgo(diff)}`;
+    }
+  }
+}
+
+function startStatusUpdater(){
+  clearInterval(statusTimer);
+  statusTimer = setInterval(updatePartnerStatus, 10000);
+}
+
+function saveMessage(messageData) {
+  const transaction = db.transaction(["messages"], "readwrite");
+  const store = transaction.objectStore("messages");
+  store.add(messageData);
+  updateMyActivity();
+}
+
+async function loadMessages() {
+  messagesContainer.innerHTML = "";
+  const transaction = db.transaction(["messages"], "readonly");
+  const store = transaction.objectStore("messages");
+  const getAllRequest = store.getAll();
+
+  getAllRequest.onsuccess = async () => {
+    const now = Date.now();
+    const validMessages = getAllRequest.result.filter(msg => (now - msg.sentTime) < TWENTY_FOUR_HOURS);
+    for(const msg of validMessages){
+      await renderMessage(msg);
+    }
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+}
+
+async function renderMessage(msg) {
+  const senderProfile = await getProfile(msg.sender);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = `message-row ${msg.sender === currentUser ? "sent" : "received"}`;
+
+  const avatarBox = document.createElement("div");
+  avatarBox.className = "msg-avatar";
+  const avatarImg = document.createElement("img");
+  avatarImg.src = senderProfile.avatarImage;
+  if(senderProfile.avatarImage) avatarImg.style.display = "block";
+  avatarBox.appendChild(avatarImg);
+
+  const messageBlock = document.createElement("div");
+  messageBlock.className = "message";
+
+  const senderLabel = document.createElement("span");
+  senderLabel.className = "sender-tag";
+  senderLabel.textContent = `${senderProfile.name} · ${msg.timestamp}`;
+  messageBlock.appendChild(senderLabel);
+
+  if(msg.text) {
+    const textNode = document.createElement("p");
+    textNode.textContent = msg.text;
+    messageBlock.appendChild(textNode);
+  }
+
+  if(msg.fileDataUrl) {
+    let mediaElement;
+    if(msg.fileType.startsWith("image/")) {
+      mediaElement = document.createElement("img");
+      mediaElement.src = msg.fileDataUrl;
+    } else if(msg.fileType.startsWith("video/")) {
+      mediaElement = document.createElement("video");
+      mediaElement.src = msg.fileDataUrl;
+      mediaElement.controls = true;
+    }
+    if(mediaElement) messageBlock.appendChild(mediaElement);
+  }
+
+  wrapper.appendChild(avatarBox);
+  wrapper.appendChild(messageBlock);
+  messagesContainer.appendChild(wrapper);
+}
+
+mediaInput.addEventListener("change", () => {
+  if (mediaInput.files && mediaInput.files.length > 0) {
+    selectedFile = mediaInput.files[0];
+    previewName.textContent = `Attached: ${selectedFile.name}`;
+    previewBar.style.display = "flex";
+  }
+})
+
+clearPreviewBtn.addEventListener("click", () => {
+  selectedFile = null;
+  mediaInput.value = "";
+  previewBar.style.display = "none";
+})
+
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = messageInput.value.trim();
+  if (!text && !selectedFile) return;
+
+  let fileDataUrl = null;
+  let fileType = null;
+  if(selectedFile){
+    const reader = new FileReader();
+    fileDataUrl = await new Promise(resolve => {
+      reader.onload = ev => resolve(ev.target.result);
+      reader.readAsDataURL(selectedFile);
+    })
+    fileType = selectedFile.type;
+  }
+
+  const newMessage = {
+    sender: currentUser,
+    text: text,
+    fileDataUrl: fileDataUrl,
+    fileType: fileType,
+    sentTime: Date.now(),
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  saveMessage(newMessage);
+  await renderMessage(newMessage);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  messageInput.value = "";
+  selectedFile = null;
+  mediaInput.value = "";
+  previewBar.style.display = "none";
+})
+</script>
+</body>
+</html>
